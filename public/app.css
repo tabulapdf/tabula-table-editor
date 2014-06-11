@@ -1,0 +1,7 @@
+canvas.verticalMove {
+  cursor: ew-resize;
+}
+
+canvas.horizontalMove {
+  cursor: ns-resize;
+}
