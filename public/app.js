@@ -6,7 +6,7 @@ var TableView = Backbone.View.extend({
     segments: true,
     stroke: true,
     fill: true,
-    tolerance: 5
+    tolerance: 2
   },
   rectangleStyle: {
     fillColor: 'white',
@@ -18,6 +18,7 @@ var TableView = Backbone.View.extend({
   lastHitRectangle: null,
   paperScope: {},
   cells: null,
+  draggedElement: null,
 
   initialize: function(options) {
     this.bounds = options.bounds;
@@ -31,36 +32,80 @@ var TableView = Backbone.View.extend({
     this._installHandlers();
     var that = this;
     $.get('/cells.json', function(data) {
+      _.each(data.cells, function(cell) {
+        var r = new that.paperScope.Path.Rectangle(cell[1], cell[0], cell[2], cell[3]);
+        r.data = 'cell';
+        r.style = that.rectangleStyle;
+       });
       _.each(data.vertical_rulings, function(r) {
         var line = new that.paperScope.Path.Line(new that.paperScope.Point(r[0], r[1]), new that.paperScope.Point(r[2], r[3]));
+        line.data = 'vertical';
         line.strokeColor = 'red';
       });
       _.each(data.horizontal_rulings, function(r) {
         var line = new that.paperScope.Path.Line(new that.paperScope.Point(r[0], r[1]), new that.paperScope.Point(r[2], r[3]));
+        line.data = 'horizontal';
         line.strokeColor = 'red';
       });
-      _.each(data.cells, function(cell) {
-         var r = new that.paperScope.Path.Rectangle(cell[1], cell[0], cell[2], cell[3]).scale(0.95);
-         r.style = that.rectangleStyle;
-       });
-
-      paper.view.draw();
+      that.paperScope.view.draw();
     });
   },
 
   _installHandlers: function() {
 
-    this.tool.onMouseMove = _.bind(function(event) {
+    this.tool.onMouseDrag = _.bind(function(event) {
+                              if (this.draggedElement === null) {
+                                return;
+                              }
+                              switch (this.draggedElement.data) {
+                                case 'vertical':
+                                this.draggedElement.position = new this.paperScope.Point(event.point.x, this.draggedElement.position.y);
+                                break;
+                                case 'horizontal':
+                                this.draggedElement.position = new this.paperScope.Point(this.draggedElement.position.x, event.point.y);
+                                break;
+                              }
+                            }, this);
+
+    this.tool.onMouseUp = _.bind(function(event) {
+                            this.draggedElement = null;
+                          }, this);
+
+    this.tool.onMouseDown = _.bind(function(event) {
                               var hitResult = this.paperScope.project.hitTest(event.point, this.hitOptions);
-                              if (!hitResult || this.lastHitRectangle === hitResult.item) {
+                              if (!hitResult && hitResult.item.data !== 'horizontal' && hitResult.item.data !== 'vertical') {
+                                this.draggedElement = null;
                                 return;
                               }
 
-                              if (this.lastHitRectangle !== null) {
-                                this.lastHitRectangle.fillColor = 'white';
+
+                              this.draggedElement = hitResult.item;
+                          }, this);
+
+    this.tool.onMouseMove = _.bind(function(event) {
+                              var hitResult = this.paperScope.project.hitTest(event.point, this.hitOptions);
+                              if (!hitResult) {
+                                $(this.paperScope.view.element).removeClass('horizontalMove verticalMove');
+                                return;
                               }
-                              hitResult.item.fillColor = 'blue';
-                              this.lastHitRectangle = hitResult.item;
+
+                              switch(hitResult.item.data) {
+                                case 'cell':
+                                if (this.lastHitRectangle === hitResult.item) return;
+                                $(this.paperScope.view.element).removeClass('horizontalMove verticalMove');
+                                if (this.lastHitRectangle !== null) {
+                                  this.lastHitRectangle.fillColor = 'white';
+                                }
+                                hitResult.item.fillColor = 'blue';
+                                this.lastHitRectangle = hitResult.item;
+                                break;
+                                case 'horizontal':
+                                $(this.paperScope.view.element).addClass('horizontalMove');
+                                break;
+                                case 'vertical':
+                                $(this.paperScope.view.element).addClass('verticalMove');
+                                break;
+                              }
                             }, this);
   }
 });
