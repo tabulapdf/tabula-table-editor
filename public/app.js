@@ -19,6 +19,10 @@ var yFirstPointComparator = function(arg0, arg1, intersectionPoints) {
   return rv;
 };
 
+var pathsIntersect = function(path1, path2) {
+  return path1.getIntersections(path2).length > 0;
+};
+
 var toolbarTemplate = "<ul class='toolbar'>" +
                       "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
                       "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
@@ -35,31 +39,25 @@ var TableView = Backbone.View.extend({
     fill: true,
     tolerance: 2
   },
-  rectangleStyle: {
-    fillColor: 'red',
-    strokeWidth: 0,
-    opacity: 0.5
-
-  },
   currentSelectionStyle: {
     fillColor: 'blue',
-    opacity: 0.2,
+    opacity: 0.1,
     data: 'currentSelection'
   },
   tools: {},
-  lastHitRectangle: null,
   paperScope: {},
-  cells: null,
   draggedElement: null,
   verticalRulings: null,
   horizontalRulings: null,
   selectedRectangles: null,
+  currentSelection: null,
   intersectionPoints: {},
   sortedIntersectionPoints: null,
   intersectionGroup: null,
 
   events: {
-    'click input[type=radio]': 'activateTool'
+    'click .toolbar input[type=radio]': 'activateTool',
+    'click .toolbar button[name=merge]': 'mergeCells'
   },
 
   initialize: function(options) {
@@ -79,14 +77,14 @@ var TableView = Backbone.View.extend({
     $(this.el).append('<canvas />');
     paper.setup($('canvas', this.el).get(0));
 
-    this.verticalRulings = new this.paperScope.CompoundPath( { strokeColor: 'green' });
+    this.verticalRulings = new this.paperScope.CompoundPath( { strokeColor: 'green', strokeWidth: 2 });
     this.verticalRulings.data = 'vertical';
-    this.horizontalRulings = new this.paperScope.CompoundPath( { strokeColor: 'blue' } );
+    this.horizontalRulings = new this.paperScope.CompoundPath( { strokeColor: 'green', strokeWidth: 2 } );
     this.horizontalRulings.data = 'horizontal';
 
     var that = this;
 
-    $.get('/cells.json', function(data) {
+    $.get('cells.json', function(data) {
       _.each(data.vertical_rulings, function(r) {
         var line = new that.paperScope.Path.Line({
           from: new paper.Point(r[0], r[1]),
@@ -110,6 +108,55 @@ var TableView = Backbone.View.extend({
 
   activateTool: function(event) {
     this.tools[$(event.target).val()].activate();
+    this.paperScope.view.draw();
+  },
+
+  // merge the cells contained in this.currentSelection
+  mergeCells: function() {
+    var p = _.partial(pathsIntersect, this.currentSelection);
+    var verticals = _.initial(_.rest(_.sortBy(_.filter(this.verticalRulings.children, p), function(v) { return v.position.x; })));
+    _.each(verticals, _.bind(function(v) {
+                          if (v.bounds.top < this.currentSelection.bounds.top) {
+                            new this.paperScope.Path.Line({
+                              from: new paper.Point(v.position.x, v.bounds.top),
+                              to: new paper.Point(v.position.x, this.currentSelection.bounds.top),
+                              parent: this.verticalRulings,
+                              data: 'vertical'
+                            });
+                          }
+                          if (v.bounds.bottom > this.currentSelection.bounds.bottom) {
+                            new this.paperScope.Path.Line({
+                              from: new paper.Point(v.position.x, this.currentSelection.bounds.bottom),
+                              to: new paper.Point(v.position.x, v.bounds.bottom),
+                              parent: this.verticalRulings,
+                              data: 'vertical'
+                            });
+                          }
+                          v.remove();
+                      }, this));
+    var horizontals = _.initial(_.rest(_.sortBy(_.filter(this.horizontalRulings.children, p), function(h) { return h.position.y; })));
+    _.each(horizontals, _.bind(function(h) {
+                          if (h.bounds.left < this.currentSelection.bounds.left) {
+                            new this.paperScope.Path.Line({
+                              from: new paper.Point(h.bounds.left, h.bounds.y),
+                              to: new paper.Point(this.currentSelection.bounds.left, h.position.y),
+                              parent: this.horizontalRulings,
+                              data: 'horizontal'
+                            });
+                          }
+                          if (h.bounds.right > this.currentSelection.bounds.right) {
+                            new this.paperScope.Path.Line({
+                              from: new paper.Point(this.currentSelection.bounds.right, h.position.y),
+                              to: new paper.Point(h.bounds.right, h.position.y),
+                              parent: this.horizontalRulings,
+                              data: 'horizontal'
+                            });
+                          }
+                          h.remove();
+                      }, this));
+
+    this._findIntersections();
+    this.paperScope.view.draw();
   },
 
   // returns a Rectangle: bounds of this table region
@@ -213,9 +260,9 @@ var TableView = Backbone.View.extend({
     return rectangles;
   },
 
-  // find the closes point to target in the NW direction
+  // find the closest point to target in the NW direction
   _findClosestTopLeft: function(target) {
-    // TODO this can be optimized by keeping a reverseSortedIntersectionPoints
+    // TODO this might be optimized by keeping a reverseSortedIntersectionPoints
     // list and binary searching the closest NW point from target
     var p;
     for (var i = this.sortedIntersectionPoints.length - 1; i >= 0; i--) {
@@ -326,26 +373,48 @@ var TableView = Backbone.View.extend({
 
 
   _createSelectTool: function() {
-    var lastHoveredRectangle = null, currentSelection = null, firstSelected = null;
-    var extendSelection = _.bind(function(point) {
+    var firstSelected = null;
 
+    var extendSelection = _.bind(function(targetRectangle) {
+                            this.selectedRectangles.removeChildren();
+                            this.selectedRectangles.addChild(firstSelected);
+                            this.selectedRectangles.addChild(new this.paperScope.Path.Rectangle(targetRectangle));
+                            $('button[name=merge]', this.$el).prop('disabled', false);
                           }, this);
+
+    var drawSelection = _.bind(function() {
+                          if (this.currentSelection !== null) this.currentSelection.remove();
+                          //this.currentSelection = new this.paperScope.Path.Rectangle(this.selectedRectangles.bounds);
+                          this.currentSelection = _.extend(new this.paperScope.Path.Rectangle(this.selectedRectangles.bounds), this.currentSelectionStyle);
+                          this.currentSelection.sendToBack();
+                        }, this);
+
+    var resetSelection = _.bind(function() {
+                           if (this.currentSelection !== null) {
+                             this.currentSelection.remove();
+                             this.currentSelection = null;
+                             this.selectedRectangles.removeChildren();
+                             $('button[name=merge]', this.$el).prop('disabled', true);
+                           }
+                         }, this);
+
     this.tools.select = new this.paperScope.Tool();
     this.tools.select.onMouseDrag = _.bind(function(event) {
-                                      if (this.draggedElement === null) {
-                                        return;
+                                      var targetRectangle = this._findRectangleFrom(this._findClosestTopLeft(event.point));
+                                      if (this.draggedElement !== null) {
+                                        resetSelection();
+                                        switch (this.draggedElement.data) {
+                                          case 'vertical':
+                                          this.draggedElement.position.x = event.point.x;
+                                          break;
+                                          case 'horizontal':
+                                          this.draggedElement.position.y = event.point.y;
+                                          break;
+                                        }
                                       }
-                                      if (currentSelection !== null) {
-                                        currentSelection.remove();
-                                        currentSelection = null;
-                                      }
-                                      switch (this.draggedElement.data) {
-                                        case 'vertical':
-                                        this.draggedElement.position.x = event.point.x;
-                                        break;
-                                        case 'horizontal':
-                                        this.draggedElement.position.y = event.point.y;
-                                        break;
+                                      else if (this.currentSelection !== null && targetRectangle !== null) {
+                                        extendSelection(targetRectangle);
+                                        drawSelection();
                                       }
                                     }, this);
 
@@ -363,65 +432,66 @@ var TableView = Backbone.View.extend({
                                        var clickedRectangle = this._findRectangleFrom(this._findClosestTopLeft(event.point));
                                        if (clickedRectangle === null) return;
                                        if (this.paperScope.Key.isDown('shift')) {
-                                         if (currentSelection === null) {
+                                         if (this.currentSelection === null) {
                                            firstSelected = new this.paperScope.Path.Rectangle(clickedRectangle);
                                          }
                                          else {
-                                           this.selectedRectangles.removeChildren();
-                                           this.selectedRectangles.addChild(firstSelected);
-                                           this.selectedRectangles.addChild(new this.paperScope.Path.Rectangle(clickedRectangle));
+                                           extendSelection(clickedRectangle);
+                                           drawSelection();
                                          }
                                        }
                                        else {
                                          this.selectedRectangles.removeChildren();
                                          firstSelected = new this.paperScope.Path.Rectangle(clickedRectangle);
                                          this.selectedRectangles.addChild(firstSelected);
-                                       }
-                                       if (currentSelection !== null) currentSelection.remove();
-                                       currentSelection = new this.paperScope.Path.Rectangle(this.selectedRectangles.bounds);
-                                       currentSelection = _.extend(currentSelection, this.currentSelectionStyle);
+                                         $('button[name=merge]', this.$el).prop('disabled', true);
 
+                                       }
+                                       drawSelection();
                                        this.draggedElement = null;
                                      }
                                      else if (hitResult.item.data === 'horizontal' || hitResult.item.data === 'vertical') {
                                        this.draggedElement = hitResult.item;
                                      }
-
                                    }, this);
 
     this.tools.select.onMouseMove = _.bind(function(event) {
-                                     var hitResult = this.hitTest(event.point);
-                                     if (!hitResult) {
-                                       $(this.el).removeClass('horizontalMove verticalMove');
-                                       return;
-                                     }
-                                     switch(hitResult.item.data) {
-                                       case 'cell':
-                                       break;
-                                       case 'horizontal':
-                                       $(this.el).addClass('horizontalMove');
-                                       break;
-                                       case 'vertical':
-                                       $(this.el).addClass('verticalMove');
-                                       break;
-                                     }
-                                   }, this);
+                                      var hitResult = this.hitTest(event.point);
+                                      $(this.el).removeClass('horizontalMove verticalMove cellSelect');
+                                      if (!hitResult) {
+                                        $(this.el).addClass('cellSelect');
+                                        return;
+                                      }
+                                      switch(hitResult.item.data) {
+                                        case 'currentSelection':
+                                        $(this.el).addClass('cellSelect');
+                                        break;
+                                        case 'horizontal':
+                                        $(this.el).addClass('horizontalMove');
+                                        break;
+                                        case 'vertical':
+                                        $(this.el).addClass('verticalMove');
+                                        break;
+                                      }
+                                    }, this);
+
+    this.tools.select.onDeactivate = _.bind(function() {
+                                       resetSelection();
+                                       $('button[name=merge]', this.$el).prop('disabled', true);
+                                       $(this.el).removeClass('horizontalMove verticalMove cellSelect');
+                                     }, this);
 
   },
+
   hitTest: function(point) {
     return this.paperScope.project.hitTest(point, this.hitOptions);
   },
+
   _checkBounds: function(point, bounds) {
     if (bounds === undefined) {
       bounds = this.getBounds();
     }
     return bounds.contains(point);
-  },
-  _getPointsInBounds: function(bounds) {
-    return _.filter(this.sortedIntersectionPoints, function(point) {
-             return point.x >= bounds.left && point.x >= bounds.top &&
-                    point.x <= bounds.left + bounds.width && point.y <= bounds.top + bounds.height;
-             });
   }
 });
 
