@@ -23,7 +23,7 @@ var pathsIntersect = function(path1, path2) {
   return path1.getIntersections(path2).length > 0;
 };
 
-var FLOAT_CMP_DELTA = 0.001;
+var FLOAT_CMP_DELTA = 0.01;
 var fEQ = function(a, b) {
   return a == b || (Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b))) < FLOAT_CMP_DELTA;
 };
@@ -432,7 +432,7 @@ var TableView = Backbone.View.extend({
 
 
   _createSelectTool: function() {
-    var firstSelected = null, dragBounds = [];
+    var firstSelected = null, dragBounds = [], pathsToChange = [];
 
     var extendSelection = _.bind(function(targetRectangle) {
                             this.selectedRectangles.removeChildren();
@@ -462,10 +462,10 @@ var TableView = Backbone.View.extend({
                          }, this);
 
     var findBounds = _.bind(function(position, direction) {
-                       var rs, i;
+                       var i;
                        switch(direction) {
                          case 'horizontal':
-                         i = _.indexOf(this.horizontalSeparators, function(p) { return fGTE(p, position); });
+                         i = _.indexOf(this.horizontalSeparators, function(p) { return fEQ(p, position); });
                          return [i === 0 ? this.getBounds().top : this.horizontalSeparators[i-1],
                                  i === this.horizontalSeparators.length - 1 ? this.getBounds().bottom : this.horizontalSeparators[i+1]];
                          case 'vertical':
@@ -478,18 +478,29 @@ var TableView = Backbone.View.extend({
 
     this.tools.select = new this.paperScope.Tool();
     this.tools.select.onMouseDrag = _.bind(function(event) {
-                                      var targetRectangle = this._findRectangleFrom(this._findClosestTopLeft(event.point));
+                                      var targetRectangle = this._findDefinedRectangle(event.point), newP, si;
                                       if (this.draggedElement !== null) {
                                         resetSelection();
                                         switch (this.draggedElement.data) {
                                           case 'vertical':
                                           if (event.point.x > dragBounds[0] && event.point.x < dragBounds[1]) {
                                             this.draggedElement.position.x = event.point.x;
+                                            _.each(pathsToChange, _.bind(function(p) {
+                                                                    si = event.point.getDistance(p.firstSegment.point) < event.point.getDistance(p.lastSegment.point) ? 0 : 1;
+                                                                    p.removeSegment(si);
+                                                                    p.add(new paper.Point(event.point.x, p.position.y));
+                                            }, this));
                                           }
                                           break;
                                           case 'horizontal':
                                           if (event.point.y > dragBounds[0] && event.point.y < dragBounds[1]) {
                                             this.draggedElement.position.y = event.point.y;
+                                            _.each(pathsToChange, function(p) {
+                                              si = event.point.getDistance(p.firstSegment.point) < event.point.getDistance(p.lastSegment.point) ? 0 : 1;
+                                              p.removeSegment(si);
+                                              p.add(new paper.Point(p.position.x, event.point.y));
+                                            });
+
                                           }
                                           break;
                                         }
@@ -542,16 +553,21 @@ var TableView = Backbone.View.extend({
                                       }
                                       else if (hitResult.item.data === 'vertical') {
                                         // find lines that we need to shrink/grow
-                                        g = _.reduce(this.verticalLinesIntersections[hitResult.item.curves[0]],
+                                        pathsToChange = _.reduce(this.verticalLinesIntersections[hitResult.item.curves[0]],
                                           _.bind(function(memo, p) {
+                                            // new this.paperScope.Path.Circle({
+		                            //   center: p,
+		                            //   radius: 2,
+		                            //   fillColor: 'red',
+		                            // }).removeOnMove();
+
                                             return memo.concat(_.filter(this.horizontalRulings.children,
                                               function(hr) {
-                                                return p.getDistance(hr.curves[0].point1) < FLOAT_CMP_DELTA ||
-                                                  p.getDistance(hr.curves[0].point2) < FLOAT_CMP_DELTA;
+                                                return p.getDistance(hr.firstSegment.point) < FLOAT_CMP_DELTA ||
+                                                  p.getDistance(hr.lastSegment.point) < FLOAT_CMP_DELTA;
                                               }));
                                           }, this),
                                           []);
-
                                         dragBounds = findBounds(hitResult.item.position.x, 'vertical');
 
                                         var rs = _.filter(this.verticalRulings.children,
@@ -570,11 +586,25 @@ var TableView = Backbone.View.extend({
                                         }
                                       }
                                       else if (hitResult.item.data === 'horizontal') {
+
+                                        pathsToChange = _.reduce(this.horizontalLinesIntersections[hitResult.item.curves[0]],
+                                          _.bind(function(memo, p) {
+                                            return memo.concat(_.filter(this.verticalRulings.children,
+                                              function(vr) {
+                                                return p.getDistance(vr.firstSegment.point) < FLOAT_CMP_DELTA ||
+                                                  p.getDistance(vr.lastSegment.point) < FLOAT_CMP_DELTA;
+                                              }));
+                                          }, this),
+                                        []);
+
+                                        console.log(pathsToChange);
+
                                         dragBounds = findBounds(hitResult.item.position.y, 'horizontal');
                                         var rs = _.filter(this.horizontalRulings.children,
                                           function(vr) {
                                             return fEQ(vr.position.y, hitResult.item.position.y);
                                           });
+
                                         if (rs.length > 1) {
                                           this.draggedElement = new this.paperScope.Group({
                                             children: rs,
