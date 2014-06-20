@@ -7,7 +7,6 @@
   </head>
   <body>
     <div id="main">
-
     </div>
     <script>
     </script>
@@ -23,23 +22,14 @@
 
     <script type="text/javascript" src="mixins.js"></script>
     <script type="text/javascript" src="rectangularSelector.js"></script>
+    <script type="text/javascript" src="tableView.js"></script>
     <script type="text/javascript" src="app.js"></script>
+
     <script type="text/javascript">
-      window.pdfListView = new PDFListView(
-          document.getElementById("main"),
-          {
-              // Comment out the next line to get a listView without text Layer.
-              //textLayerBuilder: TextLayerBuilder,
-              //annotationsLayerBuilder: AnnotationsLayerBuilder,
-              //logLevel: PDFListView.Logger.DEBUG
-          }
-      );
-      pdfListView.loadPdf("tables.pdf");
-
-      var rs = new RectangularSelector(pdfListView, {
-          end: function(b) { console.log(b); }
+      $(function() {
+          window.appView = new AppView({ pdfURL: 'tables.pdf' });
+          $('body').append(window.appView.el);
       });
-
     </script>
   </body>
 </html>

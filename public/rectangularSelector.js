@@ -1,3 +1,6 @@
+/* jshint undef: true, unused: true */
+/* global $, _, console */
+
 (function (name, context, definition) {
   if (typeof module != 'undefined' && module.exports) module.exports = definition();
   else if (typeof define == 'function' && define.amd) define(definition);
@@ -42,14 +45,12 @@ var rectangularSelector = function(pdfListView, options) {
             if (!isDragging || ($(event.target).is(options.selector) && event.target !== target)) {
                 return;
             }
-
-            var targetOffset = $(target).offset();
             var ds = {
                 'left': Math.min(start.x, event.pageX),
                 'top': Math.min(start.y, event.pageY),
                 'width': Math.abs(start.x - event.pageX),
                 'height': Math.abs(start.y - event.pageY)
-            }
+            };
             box.css(ds);
             options.drag(ds);
         },
@@ -66,14 +67,20 @@ var rectangularSelector = function(pdfListView, options) {
                 var cOffset = $(target).offset();
                 console.log(cOffset);
                 var d = {
-                    'absolutePos': _.object(dims, _.map(dims, function(d) { return parseFloat(box.css(d)); })),
-                    'relativePos': {
-                        'width': parseFloat(box.css('width')),
-                        'height': parseFloat(box.css('height')),
-                        'top': parseFloat(box.css('top')) - cOffset.top,
-                        'left': parseFloat(box.css('left')) - cOffset.left
-                    },
-                    'pageView': targetPageView
+                  'absolutePos': _.extend(cOffset,
+                    {
+                      'top': parseFloat(box.css('top')),
+                      'left': parseFloat(box.css('left')),
+                      'width': parseFloat(box.css('width')),
+                      'height': parseFloat(box.css('height'))
+                    }),
+                  'relativePos': {
+                    'width': parseFloat(box.css('width')),
+                    'height': parseFloat(box.css('height')),
+                    'top': parseFloat(box.css('top')) - cOffset.top,
+                    'left': parseFloat(box.css('left')) - cOffset.left
+                  },
+                  'pageView': targetPageView
                 };
                 options.end(d);
             }

@@ -13,16 +13,23 @@ div.page img {
 }
 
 div.table-region {
-  position: relative;
+  position: absolute;
   top: 0; left: 0;
   z-index: 21;
+  background-color: rgba(100,100,100,0.2);
 }
 
 div.table-region ul.toolbar {
   position: absolute;
-  top: 150px;
-  left: 550px;
+  top: -20px;
+  right: 0px;
+  margin: 0; padding: 0;
   z-index: 42;
+  background-color: white;
+}
+
+div.table-region ul.toolbar li {
+  display: inline;
 }
 
 div.table-region ul.toolbar :disabled {
