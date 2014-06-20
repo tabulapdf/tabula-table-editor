@@ -1,6 +1,13 @@
 /* jshint undef: true, unused: true */
 /* global $, paper, Backbone, _, console */
 
+(function (name, context, definition) {
+  if (typeof module != 'undefined' && module.exports) module.exports = definition();
+  else if (typeof define == 'function' && define.amd) define(definition);
+  else context[name] = definition();
+})('TableView', this, function (name, context) {
+
+
 var yFirstPointComparator = function(arg0, arg1, intersectionPoints) {
   var rv = 0;
   arg0 = intersectionPoints[arg0].point; arg1 = intersectionPoints[arg1].point;
@@ -34,15 +41,6 @@ var fLTE = function(a, b) {
 var fGTE = function(a, b) {
   return a > b || fEQ(a, b);
 };
-
-var toolbarTemplate = "<ul class='toolbar'>" +
-                      "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
-                      "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
-                      "<li><input type='radio' name='tool' id='addHorizontal' value='addHorizontal'><label for='addHorizontal'>Add horizontal separator</label>" +
-                      "<li><input type='radio' name='tool' id='deleteSeparator' value='deleteSeparator' disabled='true'><label for='deleteSeparator'>Delete separator</label>" +
-                      "<li><button name='merge' disabled='true'>Merge cells</button></li>" +
-                      "</ul>";
-
 
 var TableView = Backbone.View.extend({
   hitOptions: {
@@ -79,10 +77,23 @@ var TableView = Backbone.View.extend({
   intersectionGroup: null,
   undoStack: [],
 
+  tagName: 'div',
+  className: 'table-view',
+
   events: {
     'click .toolbar input[type=radio]': 'activateTool',
     'click .toolbar button[name=merge]': 'mergeCells'
   },
+
+  template: _.template(
+    "<canvas></canvas>" +
+    "<ul class='toolbar'>" +
+    "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
+    "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
+    "<li><input type='radio' name='tool' id='addHorizontal' value='addHorizontal'><label for='addHorizontal'>Add horizontal separator</label>" +
+    "<li><input type='radio' name='tool' id='deleteSeparator' value='deleteSeparator' disabled='true'><label for='deleteSeparator'>Delete separator</label>" +
+    "<li><button name='merge' disabled='true'>Merge cells</button></li>" +
+    "</ul>"),
 
   initialize: function(options) {
     this.bounds = options.bounds;
@@ -97,9 +108,8 @@ var TableView = Backbone.View.extend({
   },
 
   render: function() {
-    $(this.el).append(toolbarTemplate);
-    $(this.el).append('<canvas />');
-    paper.setup($('canvas', this.el).get(0));
+    this.$el.append(this.template());
+    paper.setup(this.$('canvas').get(0));
 
     this.verticalRulings = new this.paperScope.CompoundPath(this.rulingStyle);
     this.verticalRulings.data = 'vertical';
@@ -129,6 +139,7 @@ var TableView = Backbone.View.extend({
       that._findIntersections();
       that.paperScope.view.draw();
     });
+    return this;
   },
 
   activateTool: function(event) {
@@ -439,8 +450,8 @@ var TableView = Backbone.View.extend({
                             if (!firstSelected.bounds.contains(targetRectangle)) {
                               this.selectedRectangles.addChild(r);
                             }
-                            $('button[name=merge]', this.$el).prop('disabled', this.selectedRectangles.children.length <= 1);
-                            $('input#deleteSeparator', this.$el).prop('disabled', false);
+                            this.$('button[name=merge]').prop('disabled', this.selectedRectangles.children.length <= 1);
+                            this.$('input#deleteSeparator').prop('disabled', false);
                           }, this);
 
     var drawSelection = _.bind(function() {
@@ -454,8 +465,8 @@ var TableView = Backbone.View.extend({
                              this.currentSelection.remove();
                              this.currentSelection = null;
                              this.selectedRectangles.removeChildren();
-                             $('button[name=merge]', this.$el).prop('disabled', true);
-                             $('input#deleteseparator', this.$el).prop('disabled', true);
+                             this.$('button[name=merge]').prop('disabled', true);
+                             this.$('input#deleteseparator').prop('disabled', true);
                            }
                          }, this);
 
@@ -543,7 +554,7 @@ var TableView = Backbone.View.extend({
                                           this.selectedRectangles.removeChildren();
                                           firstSelected = new this.paperScope.Path.Rectangle(clickedRectangle);
                                           this.selectedRectangles.addChild(firstSelected);
-                                          $('button[name=merge]', this.$el).prop('disabled', true);
+                                          this.$('button[name=merge]').prop('disabled', true);
 
                                         }
                                         drawSelection();
@@ -626,28 +637,28 @@ var TableView = Backbone.View.extend({
 
     this.tools.select.onMouseMove = _.bind(function(event) {
                                       var hitResult = this.hitTest(event.point);
-                                      $(this.el).removeClass('horizontalMove verticalMove cellSelect');
+                                      this.$el.removeClass('horizontalMove verticalMove cellSelect');
                                       if (!hitResult) {
-                                        $(this.el).addClass('cellSelect');
+                                        this.$el.addClass('cellSelect');
                                         return;
                                       }
                                       switch(hitResult.item.data) {
                                         case 'currentSelection':
-                                        $(this.el).addClass('cellSelect');
+                                        this.$el.addClass('cellSelect');
                                         break;
                                         case 'horizontal':
-                                        $(this.el).addClass('horizontalMove');
+                                        this.$el.addClass('horizontalMove');
                                         break;
                                         case 'vertical':
-                                        $(this.el).addClass('verticalMove');
+                                        this.$el.addClass('verticalMove');
                                         break;
                                       }
                                     }, this);
 
     this.tools.select.onDeactivate = _.bind(function() {
                                        resetSelection();
-                                       $('button[name=merge]', this.$el).prop('disabled', true);
-                                       $(this.el).removeClass('horizontalMove verticalMove cellSelect');
+                                       this.$('button[name=merge]').prop('disabled', true);
+                                       this.$el.removeClass('horizontalMove verticalMove cellSelect');
                                      }, this);
 
   },
@@ -665,8 +676,6 @@ var TableView = Backbone.View.extend({
   }
 });
 
-var tv;
+return TableView;
 
-$(function() {
-  tv = new TableView({ el: $('div.table-region') });
 });
