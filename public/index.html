@@ -6,19 +6,112 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
-    <div id="layout">
-      <div class="page">
-        <img src="sample.jpg" />
-        <div class="table-region" style="width: 900px; height: 1000px;"></div>
-      </div>
+    <div id="main">
+
     </div>
     <script>
     </script>
     <script type="text/javascript" src="bower_components/paper/dist/paper-full.min.js"></script>
     <script type="text/javascript" src="bower_components/underscore/underscore.js"></script>
-    <script type="text/javascript" src="mixins.js"></script>
     <script type="text/javascript" src="bower_components/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript" src="bower_components/backbone/backbone.js"></script>
+    <script type="text/javascript" src="bower_components/pdfListView/external/compatibility.js"></script>
+    <script type="text/javascript" src="bower_components/pdfListView/external/pdf.js"></script>
+    <script type="text/javascript">PDFJS.workerSrc = 'bower_components/pdfListView/external/pdf.worker.js';</script>
+    <!-- Core pdfListView file -->
+    <script src="bower_components/pdfListView/src/PdfListView.js"></script>
+
+    <script type="text/javascript" src="mixins.js"></script>
     <script type="text/javascript" src="app.js"></script>
+    <script type="text/javascript">
+      window.pdfListView = new PDFListView(
+          document.getElementById("main"),
+          {
+              // Comment out the next line to get a listView without textLayer.
+              //textLayerBuilder: TextLayerBuilder,
+              //annotationsLayerBuilder: AnnotationsLayerBuilder,
+              //logLevel: PDFListView.Logger.DEBUG
+          }
+      );
+      pdfListView.loadPdf("tables.pdf");
+
+      var rectangularSelector = function(pdfListView, options) {
+          var isDragging = false;
+          var target = null;
+          var start = null;
+          var box = $('<div></div>').addClass('selection-box').appendTo($('body'));
+          var self = this;
+          var pdfListView = pdfListView;
+          var options = _.extend({
+              selector: options.selector || 'div.page-view canvas',
+              start: function() {},
+              end: function() {},
+              drag: function() {}
+          }, options);
+          var fullSelector = options.selector + ', .selection-box';
+
+          this.areas = {};
+
+          $(document).on({
+              mousedown: function(event) {
+                  target = this;
+                  isDragging = true;
+                  start = { x: event.pageX, y: event.pageY };
+                  box.css({
+                      'top': event.clientY,
+                      'left': event.clientX,
+                      'width': 0,
+                      'height': 0,
+                      'visibility': 'visible'
+                  });
+                  options.start(event);
+              },
+
+              mousemove: function(event) {
+
+                  if (!isDragging || ($(event.target).is(options.selector) && event.target !== target)) {
+                      return;
+                  }
+
+                  var targetOffset = $(target).offset();
+                  var dims = {
+                      'left': Math.min(start.x, event.pageX),
+                      'top': Math.min(start.y, event.pageY),
+                      'width': Math.abs(start.x - event.pageX),
+                      'height': Math.abs(start.y - event.pageY)
+                  }
+                  box.css(dims);
+                  options.drag(dims);
+              },
+
+              mouseup: function(event) {
+                  if (isDragging) { // selection ended
+                      var pvs = pdfListView.listView.pageViews, targetPageView;
+                      for (var i = 0; i < pvs.length; i++) {
+                          if (pvs[i].canvas == target) {
+                              targetPageView = pvs[i];
+                              break;
+                          }
+                      }
+                      console.log($(targetPageView.canvas).offset(), targetPageView.canvas.pageY);
+                      options.end(_.map(['top', 'left', 'width', 'height'],
+                                        function(p) {
+                                            return box.css(p);
+                                        }));
+                  }
+                  target = null;
+                  start = null;
+                  isDragging = false;
+                  box.css('visibility', 'hidden');
+              }
+          }, fullSelector);
+      };
+
+      var rs = new rectangularSelector(pdfListView, {
+          end: function(b) { console.log(b); }
+      });
+
+
+    </script>
   </body>
 </html>

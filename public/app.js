@@ -144,7 +144,7 @@ var TableView = Backbone.View.extend({
                           if (v.bounds.top < this.currentSelection.bounds.top) {
                             new this.paperScope.Path.Line(_.extend(this.rulingStyle, {
                               from: new paper.Point(v.position.x, v.bounds.top),
-                              to: new paper.Point(v.position.x, this.currentSelection.bounds.top),
+                              to: new paper.Point(v.position.x, this.currentSelection.bounds.top + this.rulingStyle.strokeWidth),
                               parent: this.verticalRulings,
                               data: 'vertical'
                             }));
@@ -202,7 +202,7 @@ var TableView = Backbone.View.extend({
                    // TODO remove this circle when finishing debugging
                    new this.paperScope.Path.Circle({
 		     center: inters.point,
-		     radius: 2,
+		     radius: 0,
 		     fillColor: '#009dec',
                      parent: this.intersectionGroup
 		   });
@@ -223,8 +223,6 @@ var TableView = Backbone.View.extend({
                      this.horizontalLinesIntersections[inters.intersection.curve] = [inters.point];
                    }
                  }, this));
-
-
 
     var keys =  _.keys(this.intersectionPoints)
                  .sort(_.bind(function(arg1, arg2) {
@@ -553,13 +551,15 @@ var TableView = Backbone.View.extend({
                                       }
                                       else if (hitResult.item.data === 'vertical') {
                                         // find lines that we need to shrink/grow
+                                        console.log('horizontal', hitResult.item.firstSegment.point, hitResult.item.lastSegment.point);
+
                                         pathsToChange = _.reduce(this.verticalLinesIntersections[hitResult.item.curves[0]],
                                           _.bind(function(memo, p) {
-                                            // new this.paperScope.Path.Circle({
-		                            //   center: p,
-		                            //   radius: 2,
-		                            //   fillColor: 'red',
-		                            // }).removeOnMove();
+                                             // new this.paperScope.Path.Circle({
+		                             //   center: p,
+		                             //   radius: 2,
+		                             //   fillColor: 'red'
+		                             // }).removeOnMove();
 
                                             return memo.concat(_.filter(this.horizontalRulings.children,
                                               function(hr) {
@@ -589,11 +589,17 @@ var TableView = Backbone.View.extend({
 
                                         pathsToChange = _.reduce(this.horizontalLinesIntersections[hitResult.item.curves[0]],
                                           _.bind(function(memo, p) {
+                                          new this.paperScope.Path.Circle({
+		                               center: p,
+		                               radius: 2,
+		                               fillColor: 'red'
+		                             }).removeOnMove();
+
                                             return memo.concat(_.filter(this.verticalRulings.children,
-                                              function(vr) {
-                                                return p.getDistance(vr.firstSegment.point) < FLOAT_CMP_DELTA ||
-                                                  p.getDistance(vr.lastSegment.point) < FLOAT_CMP_DELTA;
-                                              }));
+                                              _.bind(function(vr) {
+                                                return p.getDistance(vr.firstSegment.point) <= this.rulingStyle.strokeWidth ||
+                                                  p.getDistance(vr.lastSegment.point) <= this.rulingStyle.strokeWidth;
+                                              }, this)));
                                           }, this),
                                         []);
 

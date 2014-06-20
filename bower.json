@@ -25,6 +25,7 @@
   "dependencies": {
     "backbone": "~1.1.2",
     "paper": "~0.9.18",
-    "jquery": "~2.1.1"
+    "jquery": "~2.1.1",
+    "pdfListView": "https://github.com/jviereck/pdfListView.git"
   }
 }
