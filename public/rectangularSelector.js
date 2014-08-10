@@ -1,5 +1,5 @@
 /* jshint undef: true, unused: true */
-/* global $, _, console */
+/* global $, _, console, document */
 
 (function (name, context, definition) {
   if (typeof module != 'undefined' && module.exports) module.exports = definition();
@@ -12,15 +12,12 @@ var rectangularSelector = function(pdfListView, options) {
     var target = null;
     var start = null;
     var box = $('<div></div>').addClass('selection-box').appendTo($('body'));
-    var self = this;
-    var pdfListView = pdfListView;
     var options = _.extend({
         selector: options.selector || 'div.page-view canvas',
         start: function() {},
         end: function() {},
         drag: function() {}
     }, options);
-    var dims = ['top', 'left', 'width', 'height'];
     var fullSelector = options.selector + ', .selection-box';
 
     this.areas = {};
@@ -65,7 +62,7 @@ var rectangularSelector = function(pdfListView, options) {
                     }
                 }
                 var cOffset = $(target).offset();
-                console.log(cOffset);
+
                 var d = {
                   'absolutePos': _.extend(cOffset,
                     {

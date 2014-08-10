@@ -19,6 +19,91 @@ div.table-region {
   background-color: rgba(100,100,100,0.2);
 }
 
+
+div.table-region .resize-handle {
+  position: absolute;
+}
+
+div.table-region .n-border {
+  width: 100%;
+  top: 0; left: 0;
+  height: 5px;
+}
+
+div.table-region .n-border:hover {
+  cursor: n-resize;
+}
+
+div.table-region .nw-border {
+  width: 5px; height: 5px;
+  top: 0; left: 0;
+}
+
+div.table-region .nw-border:hover {
+  cursor: nw-resize;
+}
+
+div.table-region .ne-border {
+  width: 5px; height: 5px;
+  top: 0; right: 0;
+}
+
+div.table-region .ne-border:hover {
+  cursor: ne-resize;
+}
+
+
+div.table-region .s-border {
+  width: 100%;
+  bottom: 0px;
+  height: 5px;
+}
+
+div.table-region .s-border:hover {
+  cursor: s-resize;
+}
+
+div.table-region .sw-border {
+  width: 5px; height: 5px;
+  bottom: 0; left: 0;
+}
+
+div.table-region .sw-border:hover {
+  cursor: sw-resize;
+}
+
+div.table-region .se-border {
+  width: 5px; height: 5px;
+  bottom: 0; right: 0;
+}
+
+div.table-region .se-border:hover {
+  cursor: se-resize;
+}
+
+
+div.table-region .w-border {
+  height: 100%;
+  left: 0;
+  width: 5px;
+}
+
+div.table-region .w-border:hover {
+  cursor: w-resize;
+}
+
+div.table-region .e-border {
+  height: 100%;
+  right: 0px;
+  width: 5px;
+}
+
+
+div.table-region .e-border:hover {
+  cursor: e-resize;
+}
+
+
 div.table-region ul.toolbar {
   position: absolute;
   top: -20px;

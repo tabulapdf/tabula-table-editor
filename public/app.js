@@ -1,3 +1,6 @@
+/* jshint undef: true, unused: true */
+/* global $, _, console, document, define, PDFListView, RectangularSelector, TableView, Backbone */
+
 (function (name, context, definition) {
   if (typeof module != 'undefined' && module.exports) module.exports = definition();
   else if (typeof define == 'function' && define.amd) define(definition);
@@ -15,7 +18,9 @@ var AppView = Backbone.View.extend({
     this.pdfListView = new PDFListView(this.$('#pdf-list-view').get(0));
     this.pdfListView.loadPdf(options.pdfURL);
     this.rectangularSelector = new RectangularSelector(this.pdfListView,
-      { end: _.bind(this.endSelection, this) });
+      {
+        end: _.bind(this.endSelection, this)
+      });
   },
 
   render: function() {

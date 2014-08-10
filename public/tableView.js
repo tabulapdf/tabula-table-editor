@@ -42,6 +42,8 @@ var fGTE = function(a, b) {
   return a > b || fEQ(a, b);
 };
 
+var resizeDirectionMatch = /(n|s|w|e|ne|nw|se|sw)-border/;
+
 var TableView = Backbone.View.extend({
   hitOptions: {
     segments: true,
@@ -83,10 +85,21 @@ var TableView = Backbone.View.extend({
   events: {
     'click .toolbar input[type=radio]': 'activateTool',
     'click .toolbar button[name=merge]': 'mergeCells',
-    'click .toolbar button[name=close]': 'remove'
+    'click .toolbar button[name=close]': 'remove',
+    'mousedown .resize-handle': 'mouseDownResize',
+    'mousemove': 'mouseMoveResize',
+    'mouseup': 'mouseUpResize'
   },
 
   template: _.template(
+    "<div class='resize-handle n-border'></div>" +
+    "<div class='resize-handle s-border'></div>" +
+    "<div class='resize-handle w-border'></div>" +
+    "<div class='resize-handle e-border'></div>" +
+    "<div class='resize-handle nw-border'></div>" +
+    "<div class='resize-handle sw-border'></div>" +
+    "<div class='resize-handle se-border'></div>" +
+    "<div class='resize-handle ne-border'></div>" +
     "<canvas></canvas>" +
     "<ul class='toolbar'>" +
     "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
@@ -145,6 +158,26 @@ var TableView = Backbone.View.extend({
       that.paperScope.view.draw();
     });
     return this;
+  },
+
+  mouseDownResize: function(event) {
+    var d = resizeDirectionMatch.exec($(event.target).attr('class'));
+    if (!d || d.length < 2) {
+      this.resizing = false;
+    }
+    else {
+      this.resizing = d[1];
+    }
+  },
+
+  mouseMoveResize: function(event) {
+    if (!this.resizing) return;
+    // TODO: implement resizing here.
+    console.log(this.resizing);
+  },
+
+  mouseUpResize: function(event) {
+    if (this.resizing) this.resizing = false;
   },
 
   activateTool: function(event) {

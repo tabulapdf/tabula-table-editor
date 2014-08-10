@@ -7,7 +7,6 @@ var indexOfValue = _.indexOf;
 // using .mixin allows both wrapped and unwrapped calls:
 // _(array).indexOf(...) and _.indexOf(array, ...)
 _.mixin({
-
     // return the index of the first array element passing a test
     indexOf: function(array, test) {
         // delegate to standard indexOf if the test isn't a function
