@@ -91,7 +91,7 @@ var TableView = Backbone.View.extend({
     'mouseup': 'mouseUpResize'
   },
 
-  template: _.template(
+  template:
     "<div class='resize-handle n-border'></div>" +
     "<div class='resize-handle s-border'></div>" +
     "<div class='resize-handle w-border'></div>" +
@@ -101,17 +101,18 @@ var TableView = Backbone.View.extend({
     "<div class='resize-handle se-border'></div>" +
     "<div class='resize-handle ne-border'></div>" +
     "<canvas></canvas>" +
-    "<ul class='toolbar'>" +
+    "<ul class='toolbar' unselectable='on'>" +
     "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
     "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
     "<li><input type='radio' name='tool' id='addHorizontal' value='addHorizontal'><label for='addHorizontal'>Add horizontal separator</label>" +
     "<li><input type='radio' name='tool' id='deleteSeparator' value='deleteSeparator' disabled='true'><label for='deleteSeparator'>Delete separator</label>" +
     "<li><button name='merge' disabled='true'>Merge cells</button></li>" +
     "<li><button name='close'>Delete region</button></li>" +
-    "</ul>"),
+    "</ul>",
 
   initialize: function(options) {
     this.bounds = options.bounds;
+    this.pageView = options.target;
     paper.install(this.paperScope);
 
     this.render();
@@ -123,10 +124,15 @@ var TableView = Backbone.View.extend({
     this._createSelectTool();
     this._createAddSeparatorTools();
     this._createDeleteSeparatorTool();
+
+    $(options.target.canvas).on({
+      mousemove: _.bind(this.mouseMoveResize, this),
+      mouseup: _.bind(this.mouseUpResize, this)
+    });
   },
 
   render: function() {
-    this.$el.append(this.template());
+    this.$el.append(this.template);
     paper.setup(this.$('canvas').get(0));
 
     this.verticalRulings = new this.paperScope.CompoundPath(this.rulingStyle);
@@ -173,12 +179,30 @@ var TableView = Backbone.View.extend({
   // http://jsfiddle.net/BaliBalo/9HXMG/
   mouseMoveResize: function(event) {
     if (!this.resizing) return;
-    // TODO: implement resizing here.
-    console.log(this.resizing);
+    var ev = event;
+    var css = {};
+
+    if (this.resizing.indexOf('n') !== -1) {
+      css.height = this.$el.height() + parseInt(this.$el.css('top'), 10) - ev.pageY;
+      css.top = ev.pageY;
+    }
+    else if (this.resizing.indexOf('s') !== -1) {
+      css.height = ev.pageY - parseInt(this.$el.css('top'), 10);
+    }
+
+    if (this.resizing.indexOf('w') !== -1) {
+      css.width =  this.$el.width() + parseInt(this.$el.css('left'), 10) - ev.pageX;
+      css.left = ev.pageX;
+    }
+    else if (this.resizing.indexOf('e') !== -1) {
+      css.width = ev.pageX - parseInt(this.$el.css('left'), 10);
+    }
+
+    this.$el.css(css);
   },
 
   mouseUpResize: function(event) {
-    if (this.resizing) this.resizing = false;
+    this.resizing = false;
   },
 
   activateTool: function(event) {

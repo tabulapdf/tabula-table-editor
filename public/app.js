@@ -29,7 +29,10 @@ var AppView = Backbone.View.extend({
   },
 
   endSelection: function(event) {
-    var tv = new TableView({ position: event.absolutePos });
+    var tv = new TableView({
+      position: event.absolutePos,
+      target: event.pageView
+    });
     this.$el.append(tv.el);
     console.log('endSelection', event);
   },
@@ -38,7 +41,6 @@ var AppView = Backbone.View.extend({
     this.rectangularSelector.box.remove();
     Backbone.View.prototype.remove.call(this);
   }
-
 
 });
 

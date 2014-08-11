@@ -22,7 +22,13 @@ div.table-region {
 
 div.table-region .resize-handle {
   position: absolute;
+  font-size: 5px;
+  text-align: center;
 }
+
+  div.table-region .resize-handle::before {
+    content: "￭";
+  }
 
 div.table-region .n-border {
   width: 100%;
@@ -52,7 +58,6 @@ div.table-region .ne-border:hover {
   cursor: ne-resize;
 }
 
-
 div.table-region .s-border {
   width: 100%;
   bottom: 0px;
@@ -80,7 +85,6 @@ div.table-region .se-border {
 div.table-region .se-border:hover {
   cursor: se-resize;
 }
-
 
 div.table-region .w-border {
   height: 100%;
@@ -111,6 +115,10 @@ div.table-region ul.toolbar {
   margin: 0; padding: 0;
   z-index: 42;
   background-color: white;
+  -moz-user-select: none; 
+  -webkit-user-select: none; 
+  -ms-user-select:none; 
+  user-select:none;
 }
 
 div.table-region ul.toolbar li {
