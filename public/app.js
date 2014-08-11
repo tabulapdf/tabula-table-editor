@@ -13,14 +13,23 @@ var AppView = Backbone.View.extend({
   tagName: 'div',
   id: 'main',
 
-  initialize: function initialize(options) {
+  initialize: function(options) {
     this.render();
     this.pdfListView = new PDFListView(this.$('#pdf-list-view').get(0));
-    this.pdfListView.loadPdf(options.pdfURL, options.onLoadProgress);
+    this.options = options;
+
+    if (options.pdfURL !== undefined) {
+      this.loadPdf(options.pdfURL);
+    }
+
     this.rectangularSelector = new RectangularSelector(this.pdfListView,
       {
         end: _.bind(this.endSelection, this)
       });
+  },
+
+  loadPdf: function(url) {
+    this.pdfListView.loadPdf(url, this.options.onLoadProgress);
   },
 
   render: function() {
