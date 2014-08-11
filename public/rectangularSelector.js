@@ -11,7 +11,6 @@ var rectangularSelector = function(pdfListView, options) {
     var isDragging = false;
     var target = null;
     var start = null;
-    var box = $('<div></div>').addClass('selection-box').appendTo($('body'));
     var options = _.extend({
         selector: options.selector || 'div.page-view canvas',
         start: function() {},
@@ -19,6 +18,8 @@ var rectangularSelector = function(pdfListView, options) {
         drag: function() {}
     }, options);
     var fullSelector = options.selector + ', .selection-box';
+    this.box = $('<div></div>').addClass('selection-box').appendTo($('body'));
+    var self = this;
 
     this.areas = {};
 
@@ -27,7 +28,7 @@ var rectangularSelector = function(pdfListView, options) {
             target = this;
             isDragging = true;
             start = { x: event.pageX, y: event.pageY };
-            box.css({
+            self.box.css({
                 'top': event.clientY,
                 'left': event.clientX,
                 'width': 0,
@@ -48,7 +49,7 @@ var rectangularSelector = function(pdfListView, options) {
                 'width': Math.abs(start.x - event.pageX),
                 'height': Math.abs(start.y - event.pageY)
             };
-            box.css(ds);
+            self.box.css(ds);
             options.drag(ds);
         },
 
@@ -66,16 +67,16 @@ var rectangularSelector = function(pdfListView, options) {
                 var d = {
                   'absolutePos': _.extend(cOffset,
                     {
-                      'top': parseFloat(box.css('top')),
-                      'left': parseFloat(box.css('left')),
-                      'width': parseFloat(box.css('width')),
-                      'height': parseFloat(box.css('height'))
+                      'top': parseFloat(self.box.css('top')),
+                      'left': parseFloat(self.box.css('left')),
+                      'width': parseFloat(self.box.css('width')),
+                      'height': parseFloat(self.box.css('height'))
                     }),
                   'relativePos': {
-                    'width': parseFloat(box.css('width')),
-                    'height': parseFloat(box.css('height')),
-                    'top': parseFloat(box.css('top')) - cOffset.top,
-                    'left': parseFloat(box.css('left')) - cOffset.left
+                    'width': parseFloat(self.box.css('width')),
+                    'height': parseFloat(self.box.css('height')),
+                    'top': parseFloat(self.box.css('top')) - cOffset.top,
+                    'left': parseFloat(self.box.css('left')) - cOffset.left
                   },
                   'pageView': targetPageView
                 };
@@ -84,7 +85,7 @@ var rectangularSelector = function(pdfListView, options) {
             target = null;
             start = null;
             isDragging = false;
-            box.css('visibility', 'hidden');
+            self.box.css('visibility', 'hidden');
         }
     }, fullSelector);
 };

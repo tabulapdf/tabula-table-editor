@@ -170,6 +170,7 @@ var TableView = Backbone.View.extend({
     }
   },
 
+  // http://jsfiddle.net/BaliBalo/9HXMG/
   mouseMoveResize: function(event) {
     if (!this.resizing) return;
     // TODO: implement resizing here.

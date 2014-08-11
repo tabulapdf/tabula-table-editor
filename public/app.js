@@ -16,7 +16,7 @@ var AppView = Backbone.View.extend({
   initialize: function initialize(options) {
     this.render();
     this.pdfListView = new PDFListView(this.$('#pdf-list-view').get(0));
-    this.pdfListView.loadPdf(options.pdfURL);
+    this.pdfListView.loadPdf(options.pdfURL, options.onLoadProgress);
     this.rectangularSelector = new RectangularSelector(this.pdfListView,
       {
         end: _.bind(this.endSelection, this)
@@ -32,7 +32,13 @@ var AppView = Backbone.View.extend({
     var tv = new TableView({ position: event.absolutePos });
     this.$el.append(tv.el);
     console.log('endSelection', event);
+  },
+
+  remove: function() {
+    this.rectangularSelector.box.remove();
+    Backbone.View.prototype.remove.call(this);
   }
+
 
 });
 
