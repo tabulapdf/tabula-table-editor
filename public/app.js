@@ -43,7 +43,6 @@ var AppView = Backbone.View.extend({
       target: event.pageView
     });
     this.$el.append(tv.el);
-    console.log('endSelection', event);
   },
 
   remove: function() {
