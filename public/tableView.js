@@ -115,6 +115,8 @@ var TableView = Backbone.View.extend({
     this.pageView = options.target;
     paper.install(this.paperScope);
 
+    this.id = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + Date.now();
+
     this.render();
     this.$el.css(options.position);
 
@@ -166,6 +168,15 @@ var TableView = Backbone.View.extend({
     return this;
   },
 
+  getDims: function() {
+    return {
+      top: this.$el.offset().top,
+      left: this.$el.offset().left,
+      width: this.$el.width(),
+      height: this.$el.height()
+    };
+  },
+
   mouseDownResize: function(event) {
     var d = resizeDirectionMatch.exec($(event.target).attr('class'));
     if (!d || d.length < 2) {
@@ -176,11 +187,11 @@ var TableView = Backbone.View.extend({
     }
   },
 
-  // http://jsfiddle.net/BaliBalo/9HXMG/
   mouseMoveResize: function(event) {
     if (!this.resizing) return;
     var ev = event;
     var css = {};
+    var oldDims = this.getDims();
 
     if (this.resizing.indexOf('n') !== -1) {
       css.height = this.$el.height() + parseInt(this.$el.css('top'), 10) - ev.pageY;
@@ -199,10 +210,35 @@ var TableView = Backbone.View.extend({
     }
 
     this.$el.css(css);
+    if (!this.checkOverlaps()) {
+      this.$el.css(oldDims);
+    }
   },
 
   mouseUpResize: function(event) {
     this.resizing = false;
+  },
+
+  // returns true if this tableView does not overlap
+  // with any other on the same page
+  checkOverlaps: function() {
+    var thisDims = this.getDims();
+    return _.every(
+      _.reject(this.pageView.selections, function(s) {
+        return s.id === this.id;
+      }, this),
+      function(s) {
+        var sDims = s.getDims();
+        return thisDims.left + thisDims.width < sDims.left ||
+            sDims.left + sDims.width < thisDims.left ||
+            thisDims.top + thisDims.height < sDims.top ||
+            sDims.top + sDims.height < thisDims.top;
+      }, this);
+  },
+
+  remove: function() {
+    this.trigger('remove', this);
+    Backbone.View.prototype.remove.call(this);
   },
 
   activateTool: function(event) {
