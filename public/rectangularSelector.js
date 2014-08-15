@@ -21,8 +21,6 @@ var rectangularSelector = function(pdfListView, options) {
     this.box = $('<div></div>').addClass('selection-box').appendTo($('body'));
     var self = this;
 
-    this.areas = {};
-
     $(document).on({
         mousedown: function(event) {
             target = this;
@@ -39,7 +37,6 @@ var rectangularSelector = function(pdfListView, options) {
         },
 
         mousemove: function(event) {
-
             if (!isDragging || ($(event.target).is(options.selector) && event.target !== target)) {
                 return;
             }
