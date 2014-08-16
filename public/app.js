@@ -43,14 +43,21 @@ var AppView = Backbone.View.extend({
       target: event.pageView
     });
 
-    this.listenTo(tv, 'remove', function(t) {
+    this.listenTo(tv, 'remove', _.bind(function(t) {
       event.pageView.selections.splice(_.indexOf(event.pageView.selections, t), 1);
+      delete this.rectangularSelector.areas[t.id];
+    }, this));
+
+    this.listenTo(tv, 'resize', function(d) {
+      this.rectangularSelector.areas[tv.id] = d;
     });
 
     if (event.pageView.selections === undefined) {
       event.pageView.selections = [];
     }
     event.pageView.selections.push(tv);
+    this.rectangularSelector.areas[tv.id] = event.absolutePos;
+
     this.$el.append(tv.el);
   },
 

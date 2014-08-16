@@ -169,9 +169,11 @@ var TableView = Backbone.View.extend({
   },
 
   getDims: function() {
+    var o = this.$el.offset();
     return {
-      top: this.$el.offset().top,
-      left: this.$el.offset().left,
+      id: this.id,
+      top: o.top,
+      left: o.left,
       width: this.$el.width(),
       height: this.$el.height()
     };
@@ -194,19 +196,19 @@ var TableView = Backbone.View.extend({
     var oldDims = this.getDims();
 
     if (this.resizing.indexOf('n') !== -1) {
-      css.height = this.$el.height() + parseInt(this.$el.css('top'), 10) - ev.pageY;
+      css.height = oldDims.height + oldDims.top - ev.pageY;
       css.top = ev.pageY;
     }
     else if (this.resizing.indexOf('s') !== -1) {
-      css.height = ev.pageY - parseInt(this.$el.css('top'), 10);
+      css.height = ev.pageY - oldDims.top;
     }
 
     if (this.resizing.indexOf('w') !== -1) {
-      css.width =  this.$el.width() + parseInt(this.$el.css('left'), 10) - ev.pageX;
+      css.width =  oldDims.width + oldDims.left - ev.pageX;
       css.left = ev.pageX;
     }
     else if (this.resizing.indexOf('e') !== -1) {
-      css.width = ev.pageX - parseInt(this.$el.css('left'), 10);
+      css.width = ev.pageX - oldDims.left;
     }
 
     this.$el.css(css);
@@ -216,6 +218,9 @@ var TableView = Backbone.View.extend({
   },
 
   mouseUpResize: function(event) {
+    if (this.resizing) {
+      this.trigger('resize', this.getDims());
+    }
     this.resizing = false;
   },
 

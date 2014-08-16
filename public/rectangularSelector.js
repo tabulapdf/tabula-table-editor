@@ -7,6 +7,20 @@
   else context[name] = definition();
 })('RectangularSelector', this, function (name, context) {
 
+// returns true if rect does not overlap with at least one of the otherRects
+var checkOverlaps = function(rect, otherRects) {
+  if (otherRects.length === 0) return true;
+  return _.every(
+    otherRects,
+    function(or) {
+      return rect.left + rect.width < or.left ||
+        or.left + or.width < rect.left ||
+        rect.top + rect.height < or.top ||
+        or.top + or.height < rect.top;
+    }
+  );
+};
+
 var rectangularSelector = function(pdfListView, options) {
     var isDragging = false;
     var target = null;
@@ -18,8 +32,9 @@ var rectangularSelector = function(pdfListView, options) {
         drag: function() {}
     }, options);
     var fullSelector = options.selector + ', .selection-box';
-    this.box = $('<div></div>').addClass('selection-box').appendTo($('body'));
     var self = this;
+    this.box = $('<div></div>').addClass('selection-box').appendTo($('body'));
+    this.areas = {};
 
     $(document).on({
         mousedown: function(event) {
@@ -46,8 +61,11 @@ var rectangularSelector = function(pdfListView, options) {
                 'width': Math.abs(start.x - event.pageX),
                 'height': Math.abs(start.y - event.pageY)
             };
-            self.box.css(ds);
-            options.drag(ds);
+
+            if (checkOverlaps(ds, _.values(self.areas))) {
+              self.box.css(ds);
+              options.drag(ds);
+            }
         },
 
         mouseup: function(event) {
