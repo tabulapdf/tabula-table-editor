@@ -102,12 +102,12 @@ var TableView = Backbone.View.extend({
     "<div class='resize-handle ne-border'></div>" +
     "<canvas></canvas>" +
     "<ul class='toolbar' unselectable='on'>" +
-    "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
-    "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
-    "<li><input type='radio' name='tool' id='addHorizontal' value='addHorizontal'><label for='addHorizontal'>Add horizontal separator</label>" +
-    "<li><input type='radio' name='tool' id='deleteSeparator' value='deleteSeparator' disabled='true'><label for='deleteSeparator'>Delete separator</label>" +
-    "<li><button name='merge' disabled='true'>Merge cells</button></li>" +
-    "<li><button name='close'>Delete region</button></li>" +
+    // "<li><input type='radio' name='tool' id='select' value='select' checked='true'><label for='select'>Select</label>" +
+    // "<li><input type='radio' name='tool' id='addVertical' value='addVertical'><label for='addVertical'>Add vertical separator</label>" +
+    // "<li><input type='radio' name='tool' id='addHorizontal' value='addHorizontal'><label for='addHorizontal'>Add horizontal separator</label>" +
+    // "<li><input type='radio' name='tool' id='deleteSeparator' value='deleteSeparator' disabled='true'><label for='deleteSeparator'>Delete separator</label>" +
+    // "<li><button name='merge' disabled='true'>Merge cells</button></li>" +
+    "<li><button name='close'>×</button></li>" +
     "</ul>",
 
   initialize: function(options) {
